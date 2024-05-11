@@ -1,0 +1,127 @@
+# DockerCompose-version 
+
+# Define Services
+services:
+
+  # Eureka service
+  eureka:
+    image: ziedab/amsms-eureka-svc
+    ports:
+      - "8761:8761" 
+    container_name: service_eureka_cont
+    restart: always
+    networks:
+      - amsmicroservicesapp
+
+  # Provider service
+  provider:
+    image: ziedab/amsms-provider-svc
+    ports:
+      - "8001:8001" 
+    container_name: service_provider_cont
+    depends_on:
+      - dbprovider 
+      - eureka
+    restart: always
+    environment:
+        EUREKA_INSTANCE_HOSTNAME: eureka
+        SPRING_DATASOURCE_URL: jdbc:mysql://dbprovider:3306/bdServiceProviderAvril2024?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&createDatabaseIfNotExist=true
+        SPRING_DATASOURCE_USERNAME: provider
+        SPRING_DATASOURCE_PASSWORD: providerf7er7
+    networks:
+      - amsmicroservicesapp
+
+  
+  # Database Service Provider
+  dbprovider:
+    image: mysql:latest
+    container_name: service_db_provider_cont
+    volumes:
+      - provider_db_data:/var/lib/mysql 
+    restart: always
+    environment:
+      MYSQL_DATABASE: bdServiceProviderAvril2024
+      MYSQL_USER: provider
+      MYSQL_PASSWORD: providerf7er7
+      MYSQL_ROOT_PASSWORD: root
+    networks:
+      - amsmicroservicesapp
+
+  # Article service
+  article:
+    image: ziedab/amsms-article-svc
+    ports:
+      - "8003:8003" 
+    container_name: service_article_cont
+    restart: always
+    depends_on:
+      - dbarticle 
+      - eureka
+      - provider
+    environment:
+      EUREKA_INSTANCE_HOSTNAME: eureka
+      SPRING_DATASOURCE_URL: jdbc:mysql://dbarticle:3306/bdServiceArticleAvril2024?useSSL=false&serverTimezone=UTC&useLegacyDatetimeCode=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: article
+      SPRING_DATASOURCE_PASSWORD: articlec87ef8
+    networks:
+      - amsmicroservicesapp
+
+  # Database Service Provider
+  dbarticle:
+    image: mysql:latest
+    container_name: service_db_article_cont
+    volumes:
+      - article_db_data:/var/lib/mysql 
+    restart: always
+    environment:
+      MYSQL_DATABASE: bdServiceArticleAvril2024
+      MYSQL_USER: article
+      MYSQL_PASSWORD: articlec87ef8
+      MYSQL_ROOT_PASSWORD: root
+    networks:
+      - amsmicroservicesapp
+
+     
+  # Proxy Service 
+  proxy:
+    image: serviceproxy
+    container_name: ziedab/amsms-gateway-svc
+    ports:
+      - "9191:9191" 
+    depends_on:
+      - eureka
+    restart: always
+    environment:
+      EUREKA_INSTANCE_HOSTNAME: eureka
+    networks:
+      - amsmicroservicesapp
+
+  # PhpMyadmin Service 
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: service_pmadmin_cont
+    restart: always
+    depends_on:
+      - dbprovider
+      - dbarticle
+    ports:
+      - 8077:80
+    environment:
+      - PMA_ARBITRARY=1
+    networks:
+      - amsmicroservicesapp
+
+
+
+
+# Volume
+volumes:
+  provider_db_data:
+  article_db_data:
+
+# Network
+networks:
+  amsmicroservicesapp:
+  
+
+
